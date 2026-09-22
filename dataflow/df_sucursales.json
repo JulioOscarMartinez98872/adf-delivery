@@ -1,0 +1,98 @@
+{
+	"name": "df_sucursales",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "sucursales_csv",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "sucursales_sql",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "filter1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          sucursal_id as string,",
+				"          restaurante_id as string,",
+				"          nombre_sucursal as string,",
+				"          ciudad as string,",
+				"          zona as string,",
+				"          direccion as string,",
+				"          capacidad_mesas as string,",
+				"          tiene_delivery as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source1 derive(sucursal_id = trim(sucursal_id),",
+				"          restaurante_id = trim(restaurante_id),",
+				"          nombre_sucursal = trim(nombre_sucursal),",
+				"          ciudad = initCap(lower(trim(ciudad))),",
+				"          zona = initCap(lower(trim(zona))),",
+				"          direccion = trim(direccion),",
+				"          capacidad_mesas = iif(     regexMatch(toString(capacidad_mesas), '^[0-9]+$'),     toInteger(capacidad_mesas),     -1 ),",
+				"          tiene_delivery = iif(     lower(trim(tiene_delivery)) == 'sí'     || lower(trim(tiene_delivery)) == 'si',     'Sí',     'No' )) ~> derivedColumn1",
+				"derivedColumn1 filter(!isNull(sucursal_id)",
+				"&& trim(sucursal_id) != ''",
+				"&& !isNull(restaurante_id)",
+				"&& trim(restaurante_id) != ''",
+				"&& !isNull(nombre_sucursal)",
+				"&& trim(nombre_sucursal) != ''",
+				"&& !isNull(ciudad)",
+				"&& trim(ciudad) != ''",
+				"&& !isNull(direccion)",
+				"&& trim(direccion) != ''",
+				"&& capacidad_mesas >= 0) ~> filter1",
+				"filter1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          sucursal_id as string,",
+				"          restaurante_id as string,",
+				"          nombre_sucursal as string,",
+				"          ciudad as string,",
+				"          zona as string,",
+				"          direccion as string,",
+				"          capacidad_mesas as integer,",
+				"          tiene_delivery as boolean",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          sucursal_id,",
+				"          restaurante_id,",
+				"          nombre_sucursal,",
+				"          ciudad,",
+				"          zona,",
+				"          direccion,",
+				"          capacidad_mesas,",
+				"          tiene_delivery",
+				"     )) ~> sink1"
+			]
+		}
+	}
+}
