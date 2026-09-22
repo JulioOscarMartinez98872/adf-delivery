@@ -1,0 +1,15 @@
+{
+	"name": "adf-ucb-sisger-us-9887212",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "brazilsouth",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "f920b161-3bd7-4fad-b3d6-eeb492dcc4a7",
+		"tenantId": "cc28633f-12b8-46cb-bc15-951dae239b4d"
+	}
+}
