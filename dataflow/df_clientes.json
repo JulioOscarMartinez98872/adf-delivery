@@ -1,0 +1,98 @@
+{
+	"name": "df_clientes",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "clientes_csv",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "clientes_sql",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "window1"
+				},
+				{
+					"name": "filter1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          cliente_id as string,",
+				"          nombre as string,",
+				"          email as string,",
+				"          telefono as string,",
+				"          ciudad as string,",
+				"          fecha_registro as string,",
+				"          segmento as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source1 derive(cliente_id = trim(cliente_id),",
+				"          nombre = initCap(lower(trim(nombre))),",
+				"          email = iif(isNull(email) || trim(email) == '', '', lower(trim(email))),",
+				"          telefono = trim(telefono),",
+				"          ciudad = iif(upper(trim(ciudad)) == 'SCZ', 'Santa Cruz de la Sierra', initCap(lower(trim(ciudad)))),",
+				"          fecha_registro = toDate(fecha_registro, 'yyyy-MM-dd'),",
+				"          segmento = initCap(lower(trim(segmento)))) ~> derivedColumn1",
+				"derivedColumn1 window(over(cliente_id),",
+				"     asc(fecha_registro, true),",
+				"     columna1 = rowNumber()) ~> window1",
+				"window1 filter(columna1 == 1",
+				"&& !isNull(cliente_id)",
+				"&& trim(cliente_id) != ''",
+				"&& !isNull(nombre)",
+				"&& trim(nombre) != ''",
+				"&& !isNull(email)",
+				"&& trim(email) != ''",
+				"&& !isNull(ciudad)",
+				"&& trim(ciudad) != '') ~> filter1",
+				"filter1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          cliente_id as string,",
+				"          nombre as string,",
+				"          email as string,",
+				"          telefono as string,",
+				"          ciudad as string,",
+				"          fecha_registro as date,",
+				"          segmento as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          cliente_id,",
+				"          nombre,",
+				"          email,",
+				"          telefono,",
+				"          ciudad,",
+				"          fecha_registro,",
+				"          segmento",
+				"     )) ~> sink1"
+			]
+		}
+	}
+}
