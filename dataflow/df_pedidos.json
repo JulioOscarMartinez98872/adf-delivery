@@ -1,0 +1,139 @@
+{
+	"name": "df_pedidos",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "pedidos_csv",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "pedidos_sql",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "window1"
+				},
+				{
+					"name": "filter1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          pedido_id as string,",
+				"          fecha_pedido as string,",
+				"          hora_pedido as string,",
+				"          cliente_id as string,",
+				"          sucursal_id as string,",
+				"          canal as string,",
+				"          tipo_servicio as string,",
+				"          estado_pedido as string,",
+				"          promocion_id as string,",
+				"          subtotal as string,",
+				"          costo_delivery as string,",
+				"          descuento as string,",
+				"          impuesto as string,",
+				"          total_pedido as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source1 derive(pedido_id = trim(pedido_id),",
+				"          fecha_pedido = iif(     regexMatch(trim(fecha_pedido), '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),     toDate(trim(fecha_pedido), 'yyyy-MM-dd'),     toDate(trim(fecha_pedido), 'dd/MM/yyyy') ),",
+				"          hora_pedido = trim(hora_pedido),",
+				"          cliente_id = trim(cliente_id),",
+				"          sucursal_id = trim(sucursal_id),",
+				"          canal = iif(     lower(trim(canal)) == 'app',     'Aplicación',     initCap(lower(trim(canal))) ),",
+				"          tipo_servicio = initCap(lower(trim(tipo_servicio))),",
+				"          estado_pedido = initCap(lower(trim(estado_pedido))),",
+				"          promocion_id = trim(promocion_id),",
+				"          subtotal = toDecimal(subtotal),",
+				"          costo_delivery = toDecimal(costo_delivery),",
+				"          descuento = toDecimal(descuento),",
+				"          impuesto = toDecimal(impuesto),",
+				"          total_pedido = round(     toDecimal(subtotal)     + toDecimal(costo_delivery)     + toDecimal(impuesto)     - toDecimal(descuento),     2 )) ~> derivedColumn1",
+				"derivedColumn1 window(over(pedido_id),",
+				"     asc(fecha_pedido, true),",
+				"     columna1 = rowNumber()) ~> window1",
+				"window1 filter(columna1 == 1",
+				"&& !isNull(pedido_id)",
+				"&& trim(pedido_id) != ''",
+				"&& !isNull(fecha_pedido)",
+				"&& !isNull(hora_pedido)",
+				"&& !isNull(cliente_id)",
+				"&& trim(cliente_id) != ''",
+				"&& cliente_id != 'CLI99999'",
+				"&& cliente_id != 'CLI00031'",
+				"&& !isNull(sucursal_id)",
+				"&& trim(sucursal_id) != ''",
+				"&& !isNull(canal)",
+				"&& trim(canal) != ''",
+				"&& !isNull(tipo_servicio)",
+				"&& trim(tipo_servicio) != ''",
+				"&& !isNull(estado_pedido)",
+				"&& trim(estado_pedido) != ''",
+				"&& subtotal >= 0",
+				"&& costo_delivery >= 0",
+				"&& descuento >= 0",
+				"&& impuesto >= 0",
+				"&& total_pedido >= 0) ~> filter1",
+				"filter1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          pedido_id as string,",
+				"          fecha_pedido as date,",
+				"          hora_pedido as timestamp,",
+				"          cliente_id as string,",
+				"          sucursal_id as string,",
+				"          canal as string,",
+				"          tipo_servicio as string,",
+				"          estado_pedido as string,",
+				"          promocion_id as string,",
+				"          subtotal as decimal(12,2),",
+				"          costo_delivery as decimal(12,2),",
+				"          descuento as decimal(12,2),",
+				"          impuesto as decimal(12,2),",
+				"          total_pedido as decimal(12,2)",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          pedido_id,",
+				"          fecha_pedido,",
+				"          hora_pedido,",
+				"          cliente_id,",
+				"          sucursal_id,",
+				"          canal,",
+				"          tipo_servicio,",
+				"          estado_pedido,",
+				"          promocion_id,",
+				"          subtotal,",
+				"          costo_delivery,",
+				"          descuento,",
+				"          impuesto,",
+				"          total_pedido",
+				"     )) ~> sink1"
+			]
+		}
+	}
+}
